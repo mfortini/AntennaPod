@@ -40,6 +40,18 @@
                 android:key="prefPlaybackSpeedLauncher"
                 android:summary="@string/pref_playback_speed_sum"
                 android:title="@string/playback_speed"/>
+        <de.danoeh.antennapod.ui.preferences.preference.MaterialListPreference
+                android:defaultValue="off"
+                android:entries="@array/pref_audio_normalization_options"
+                android:entryValues="@array/pref_audio_normalization_values"
+                android:key="prefAudioNormalization"
+                android:summary="@string/pref_audio_normalization_sum"
+                android:title="@string/pref_audio_normalization_title"/>
+        <SwitchPreferenceCompat
+                android:defaultValue="false"
+                android:key="prefVoiceEnhancement"
+                android:summary="@string/pref_voice_enhancement_sum"
+                android:title="@string/pref_voice_enhancement_title"/>
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/reassign_hardware_buttons">

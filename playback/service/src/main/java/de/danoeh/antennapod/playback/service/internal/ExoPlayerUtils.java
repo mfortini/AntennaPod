@@ -3,11 +3,13 @@ package de.danoeh.antennapod.playback.service.internal;
 import android.content.Context;
 import android.net.Uri;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.annotation.OptIn;
 import androidx.media3.common.AudioAttributes;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
+import androidx.media3.common.audio.AudioProcessor;
 import androidx.media3.common.util.UnstableApi;
 import androidx.media3.database.StandaloneDatabaseProvider;
 import androidx.media3.datasource.DataSource;
@@ -20,8 +22,11 @@ import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
 import androidx.media3.datasource.cache.SimpleCache;
 import de.danoeh.antennapod.net.common.RedirectChecker;
 import androidx.media3.exoplayer.DefaultLoadControl;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.SeekParameters;
+import androidx.media3.exoplayer.audio.AudioSink;
+import androidx.media3.exoplayer.audio.DefaultAudioSink;
 import androidx.media3.exoplayer.drm.DrmSessionManagerProvider;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
@@ -32,6 +37,8 @@ import de.danoeh.antennapod.net.common.NetworkUtils;
 import de.danoeh.antennapod.net.common.UserAgentInterceptor;
 import de.danoeh.antennapod.playback.base.MediaItemAdapter;
 import de.danoeh.antennapod.playback.service.R;
+import de.danoeh.antennapod.playback.service.internal.audio.LoudnessNormalizerAudioProcessor;
+import de.danoeh.antennapod.playback.service.internal.audio.VoiceEnhanceAudioProcessor;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 
 import java.io.File;
@@ -42,6 +49,10 @@ import java.util.concurrent.TimeUnit;
 @OptIn(markerClass = UnstableApi.class)
 public class ExoPlayerUtils {
     private static volatile SimpleCache simpleCache;
+    private static final VoiceEnhanceAudioProcessor voiceEnhanceProcessor =
+            new VoiceEnhanceAudioProcessor();
+    private static final LoudnessNormalizerAudioProcessor loudnessNormalizerProcessor =
+            new LoudnessNormalizerAudioProcessor();
 
     @OptIn(markerClass = UnstableApi.class)
     public static ExoPlayer buildPlayer(Context context) {
@@ -50,7 +61,9 @@ public class ExoPlayerUtils {
                     new LeastRecentlyUsedCacheEvictor(100 * 1024 * 1024),
                     new StandaloneDatabaseProvider(context));
         }
+        applyAudioProcessingPreferences();
         return new ExoPlayer.Builder(context)
+                .setRenderersFactory(new ApRenderersFactory(context))
                 .setLoadControl(new DefaultLoadControl.Builder()
                         .setBufferDurationsMs(
                                 (int) TimeUnit.HOURS.toMillis(1),
@@ -67,6 +80,15 @@ public class ExoPlayerUtils {
                 .setSeekParameters(SeekParameters.EXACT)
                 .setHandleAudioBecomingNoisy(UserPreferences.isPauseOnHeadsetDisconnect())
                 .build();
+    }
+
+    public static void applyAudioProcessingPreferences() {
+        voiceEnhanceProcessor.setEnabled(UserPreferences.isVoiceEnhancement());
+        loudnessNormalizerProcessor.applyLevel(UserPreferences.getAudioNormalizationLevel());
+    }
+
+    public static float getCurrentLoudnessGainDb() {
+        return loudnessNormalizerProcessor.getCurrentGainDb();
     }
 
     public static void releaseCache() {
@@ -191,6 +213,25 @@ public class ExoPlayerUtils {
         @Override
         public int[] getSupportedTypes() {
             return defaultFactory.getSupportedTypes();
+        }
+    }
+
+    @OptIn(markerClass = UnstableApi.class)
+    private static final class ApRenderersFactory extends DefaultRenderersFactory {
+        ApRenderersFactory(Context context) {
+            super(context);
+        }
+
+        @Nullable
+        @Override
+        protected AudioSink buildAudioSink(Context context, boolean enableFloatOutput,
+                boolean enableAudioOutputPlaybackParams) {
+            return new DefaultAudioSink.Builder(context)
+                    .setEnableFloatOutput(enableFloatOutput)
+                    .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
+                    .setAudioProcessors(new AudioProcessor[] {
+                            voiceEnhanceProcessor, loudnessNormalizerProcessor})
+                    .build();
         }
     }
 }

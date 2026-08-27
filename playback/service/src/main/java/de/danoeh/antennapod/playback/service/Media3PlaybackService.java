@@ -29,6 +29,7 @@ import de.danoeh.antennapod.event.MessageEvent;
 import de.danoeh.antennapod.event.FeedItemEvent;
 import de.danoeh.antennapod.event.PlayerErrorEvent;
 import de.danoeh.antennapod.event.StreamingConfirmationEvent;
+import de.danoeh.antennapod.event.settings.AudioProcessingSettingsChangedEvent;
 import de.danoeh.antennapod.event.settings.VolumeAdaptionChangedEvent;
 import de.danoeh.antennapod.event.PlayerStatusEvent;
 import de.danoeh.antennapod.event.playback.BufferUpdateEvent;
@@ -110,6 +111,7 @@ public class Media3PlaybackService extends MediaLibraryService {
         setMediaNotificationProvider(notificationProvider);
 
         exoPlayer = ExoPlayerUtils.buildPlayer(this);
+        ExoPlayerUtils.applyAudioProcessingPreferences();
         exoPlayer.addListener(new Player.Listener() {
             @Override
             public void onAudioSessionIdChanged(int audioSessionId) {
@@ -436,6 +438,9 @@ public class Media3PlaybackService extends MediaLibraryService {
                                 }
                                 if (SkipUtils.skipEndingIfNecessary(this, currentPlayable, position, duration, speed)) {
                                     player.seekTo(player.getDuration());
+                                }
+                                if (BuildConfig.DEBUG && UserPreferences.isAudioNormalization()) {
+                                    Log.d(TAG, "loudnessGainDb=" + ExoPlayerUtils.getCurrentLoudnessGainDb());
                                 }
                             }
                         }, error -> Log.e(TAG, "Position observer error", error));
@@ -832,6 +837,12 @@ public class Media3PlaybackService extends MediaLibraryService {
             volumeAdaptionFactor = event.getVolumeAdaptionSetting().getAdaptionFactor();
             applyVolumeAdaption(1.0f);
         }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    @SuppressWarnings("unused")
+    public void audioProcessingSettingsChanged(AudioProcessingSettingsChangedEvent event) {
+        ExoPlayerUtils.applyAudioProcessingPreferences();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)

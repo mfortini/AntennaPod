@@ -9,10 +9,12 @@ import androidx.collection.ArrayMap;
 import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import de.danoeh.antennapod.R;
+import de.danoeh.antennapod.event.settings.AudioProcessingSettingsChangedEvent;
 import de.danoeh.antennapod.storage.preferences.UserPreferences;
 import de.danoeh.antennapod.ui.preferences.screen.AnimatedPreferenceFragment;
 import de.danoeh.antennapod.ui.screen.feed.preferences.SkipPreferenceDialog;
 import de.danoeh.antennapod.ui.screen.playback.VariableSpeedDialog;
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.Map;
 
@@ -50,6 +52,18 @@ public class PlaybackPreferencesFragment extends AnimatedPreferenceFragment {
             SkipPreferenceDialog.showSkipPreference(activity, SkipPreferenceDialog.SkipDirection.SKIP_FORWARD, null);
             return true;
         });
+        findPreference(UserPreferences.PREF_AUDIO_NORMALIZATION).setOnPreferenceChangeListener(
+                (preference, newValue) -> {
+                    UserPreferences.setAudioNormalizationLevel((String) newValue);
+                    EventBus.getDefault().post(new AudioProcessingSettingsChangedEvent());
+                    return true;
+                });
+        findPreference(UserPreferences.PREF_VOICE_ENHANCEMENT).setOnPreferenceChangeListener(
+                (preference, newValue) -> {
+                    UserPreferences.setVoiceEnhancement((Boolean) newValue);
+                    EventBus.getDefault().post(new AudioProcessingSettingsChangedEvent());
+                    return true;
+                });
         if (Build.VERSION.SDK_INT >= 31) {
             findPreference(UserPreferences.PREF_UNPAUSE_ON_HEADSET_RECONNECT).setVisible(false);
             findPreference(UserPreferences.PREF_UNPAUSE_ON_BLUETOOTH_RECONNECT).setVisible(false);

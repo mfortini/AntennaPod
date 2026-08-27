@@ -588,6 +588,14 @@
     <string name="pref_enqueue_downloaded_title">Enqueue downloaded</string>
     <string name="pref_enqueue_downloaded_summary">Add downloaded episodes to the queue</string>
     <string name="pref_skip_silence_title">Skip silence in audio</string>
+    <string name="pref_audio_normalization_title">Normalize volume</string>
+    <string name="pref_audio_normalization_sum">Keep a steady loudness and reduce voice dynamics a little. Also works while streaming. Does not apply to Chromecast. Per-podcast volume adaptation is still applied as an extra offset.</string>
+    <string name="pref_audio_normalization_off">Off</string>
+    <string name="pref_audio_normalization_low">Low</string>
+    <string name="pref_audio_normalization_medium">Medium</string>
+    <string name="pref_audio_normalization_high">High</string>
+    <string name="pref_voice_enhancement_title">Enhance speech</string>
+    <string name="pref_voice_enhancement_sum">Reduce rumble and boost presence around 2.5 kHz to make voices clearer. Does not apply to Chromecast.</string>
     <string name="behavior">Behavior</string>
     <string name="episode_lists">Episode lists</string>
     <string name="pref_default_page">Default page</string>

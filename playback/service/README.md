@@ -11,3 +11,9 @@ The `MediaController` exposes the standard Media3 `Player` interface: `seekTo(po
 `play()`, `pause()`, `getCurrentPosition()`, `getPlaybackParameters()`, etc.
 Each call to `bindToMedia3Service()` creates a short-lived connection that is released after the
 callback returns.
+
+Optional PCM processing (speech enhancement, then a compressor plus loudness AGC) is applied in
+`ExoPlayerUtils` via a custom `DefaultRenderersFactory` that inserts `AudioProcessor`s into
+`DefaultAudioSink`. Loudness level and speech enhancement are read from `UserPreferences` through
+`ExoPlayerUtils.applyAudioProcessingPreferences()` (also posted as
+`AudioProcessingSettingsChangedEvent`).

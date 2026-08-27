@@ -1,0 +1,98 @@
+package de.danoeh.antennapod.playback.service.internal.audio;
+
+public class DynamicsCompressor {
+    private static final float WINDOW_MS = 10f;
+    private static final float ATTACK_MS = 10f;
+    private static final float RELEASE_MS = 150f;
+    private static final float KNEE_DB = 6f;
+
+    private volatile boolean enabled;
+    private volatile float thresholdDb = -20f;
+    private volatile float ratio = 1.8f;
+    private int channelCount = 1;
+    private int windowSizeFrames;
+    private int framesInWindow;
+    private double sumSquares;
+    private float currentGainDb;
+    private float currentGainLin = 1f;
+    private float attackCoef;
+    private float releaseCoef;
+
+    public void configure(int sampleRate, int channelCount) {
+        this.channelCount = Math.max(1, channelCount);
+        windowSizeFrames = Math.max(1, Math.round(sampleRate * WINDOW_MS / 1000f));
+        float windowSec = windowSizeFrames / (float) sampleRate;
+        attackCoef = 1f - (float) Math.exp(-windowSec / (ATTACK_MS / 1000f));
+        releaseCoef = 1f - (float) Math.exp(-windowSec / (RELEASE_MS / 1000f));
+        reset();
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setThresholdDb(float thresholdDb) {
+        this.thresholdDb = thresholdDb;
+    }
+
+    public void setRatio(float ratio) {
+        this.ratio = Math.max(1f, ratio);
+    }
+
+    public void reset() {
+        framesInWindow = 0;
+        sumSquares = 0;
+        currentGainDb = 0f;
+        currentGainLin = 1f;
+    }
+
+    public void process(float[] samples, int offset, int length) {
+        if (!enabled || windowSizeFrames <= 0) {
+            return;
+        }
+        int end = offset + length;
+        for (int i = offset; i < end; i += channelCount) {
+            int remaining = end - i;
+            int channelsThisFrame = Math.min(channelCount, remaining);
+            for (int ch = 0; ch < channelsThisFrame; ch++) {
+                float x = samples[i + ch];
+                sumSquares += (double) x * x;
+                samples[i + ch] = x * currentGainLin;
+            }
+            framesInWindow++;
+            if (framesInWindow >= windowSizeFrames) {
+                updateGain();
+            }
+        }
+    }
+
+    private void updateGain() {
+        int sampleCount = framesInWindow * channelCount;
+        float rms = sampleCount == 0 ? 0f : (float) Math.sqrt(sumSquares / sampleCount);
+        float levelDb = rms < 1e-9f ? -100f : (float) (20.0 * Math.log10(rms));
+        float desiredDb = computeGainDb(levelDb);
+        float coef = desiredDb < currentGainDb ? attackCoef : releaseCoef;
+        currentGainDb += coef * (desiredDb - currentGainDb);
+        currentGainLin = (float) Math.pow(10.0, currentGainDb / 20.0);
+        framesInWindow = 0;
+        sumSquares = 0;
+    }
+
+    private float computeGainDb(float levelDb) {
+        float slope = 1f - 1f / ratio;
+        float halfKnee = KNEE_DB / 2f;
+        float delta = levelDb - thresholdDb;
+        if (delta <= -halfKnee) {
+            return 0f;
+        }
+        if (delta >= halfKnee) {
+            return -slope * delta;
+        }
+        float x = delta + halfKnee;
+        return -slope * x * x / (2f * KNEE_DB);
+    }
+}

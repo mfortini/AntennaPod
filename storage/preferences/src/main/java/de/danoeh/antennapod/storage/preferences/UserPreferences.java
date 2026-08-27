@@ -122,6 +122,12 @@ public abstract class UserPreferences {
     // Mediaplayer
     private static final String PREF_PLAYBACK_SPEED = "prefPlaybackSpeed";
     public static final String PREF_PLAYBACK_SKIP_SILENCE = "prefSkipSilence";
+    public static final String PREF_AUDIO_NORMALIZATION = "prefAudioNormalization";
+    public static final String PREF_VOICE_ENHANCEMENT = "prefVoiceEnhancement";
+    public static final String AUDIO_NORMALIZATION_OFF = "off";
+    public static final String AUDIO_NORMALIZATION_LIGHT = "light";
+    public static final String AUDIO_NORMALIZATION_MEDIUM = "medium";
+    public static final String AUDIO_NORMALIZATION_HIGH = "high";
     private static final String PREF_FAST_FORWARD_SECS = "prefFastForwardSecs";
     private static final String PREF_REWIND_SECS = "prefRewindSecs";
     private static final String PREF_QUEUE_LOCKED = "prefQueueLocked";
@@ -470,6 +476,32 @@ public abstract class UserPreferences {
         return prefs.getBoolean(PREF_PLAYBACK_SKIP_SILENCE, false);
     }
 
+    public static boolean isAudioNormalization() {
+        return !AUDIO_NORMALIZATION_OFF.equals(getAudioNormalizationLevel());
+    }
+
+    public static String getAudioNormalizationLevel() {
+        try {
+            String value = prefs.getString(PREF_AUDIO_NORMALIZATION, AUDIO_NORMALIZATION_OFF);
+            if (AUDIO_NORMALIZATION_LIGHT.equals(value)
+                    || AUDIO_NORMALIZATION_MEDIUM.equals(value)
+                    || AUDIO_NORMALIZATION_HIGH.equals(value)
+                    || AUDIO_NORMALIZATION_OFF.equals(value)) {
+                return value;
+            }
+            return AUDIO_NORMALIZATION_OFF;
+        } catch (ClassCastException e) {
+            boolean old = prefs.getBoolean(PREF_AUDIO_NORMALIZATION, false);
+            String migrated = old ? AUDIO_NORMALIZATION_LIGHT : AUDIO_NORMALIZATION_OFF;
+            prefs.edit().putString(PREF_AUDIO_NORMALIZATION, migrated).apply();
+            return migrated;
+        }
+    }
+
+    public static boolean isVoiceEnhancement() {
+        return prefs.getBoolean(PREF_VOICE_ENHANCEMENT, false);
+    }
+
     public static List<Float> getPlaybackSpeedArray() {
         return readPlaybackSpeedArray(prefs.getString(PREF_PLAYBACK_SPEED_ARRAY, null));
     }
@@ -640,6 +672,14 @@ public abstract class UserPreferences {
 
     public static void setSkipSilence(boolean skipSilence) {
         prefs.edit().putBoolean(PREF_PLAYBACK_SKIP_SILENCE, skipSilence).apply();
+    }
+
+    public static void setAudioNormalizationLevel(String level) {
+        prefs.edit().putString(PREF_AUDIO_NORMALIZATION, level).apply();
+    }
+
+    public static void setVoiceEnhancement(boolean enabled) {
+        prefs.edit().putBoolean(PREF_VOICE_ENHANCEMENT, enabled).apply();
     }
 
     public static void setPlaybackSpeedArray(List<Float> speeds) {
