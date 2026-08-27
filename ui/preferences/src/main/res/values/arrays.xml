@@ -280,4 +280,18 @@
         <item>@string/statistics_label</item>
         <item>@string/remember_last_page</item>
     </string-array>
+
+    <string-array name="pref_audio_normalization_options">
+        <item>@string/pref_audio_normalization_off</item>
+        <item>@string/pref_audio_normalization_low</item>
+        <item>@string/pref_audio_normalization_medium</item>
+        <item>@string/pref_audio_normalization_high</item>
+    </string-array>
+
+    <string-array name="pref_audio_normalization_values">
+        <item>off</item>
+        <item>light</item>
+        <item>medium</item>
+        <item>high</item>
+    </string-array>
 </resources>
